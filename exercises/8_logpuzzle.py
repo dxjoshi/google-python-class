@@ -9,7 +9,11 @@
 import os
 import re
 import sys
-import urllib
+import urllib.request
+import os
+import errno
+
+
 
 """Logpuzzle exercise
 Given an apache logfile, find the puzzle urls and download the images.
@@ -25,7 +29,18 @@ def read_urls(filename):
   Screens out duplicate urls and returns the urls sorted into
   increasing order."""
   # +++your code here+++
-  
+  # print(filename)
+  server = re.match(r'[\S.]+_([\S.]+)', filename).group(1)
+  # print(server)
+  file = open(filename, 'r')
+  slices = ['http://%s%s' % (server, url[0]) for url in sorted(re.findall(r'.*GET\s([\w\S]+puzzle[\w\S]+)\s(HTTP[\d\S.]+)', file.read()))]
+  # for url in slices:
+  #   print(url)
+  return slices
+  # slices = sorted(re.findall(r'.*GET\s([\w\S]+puzzle[\w\S]+)\s(HTTP[\d\S.]+)', file.read()))
+  # for url in slices:
+  #   print('http://%s%s' % (server, url[0]))
+
 
 def download_images(img_urls, dest_dir):
   """Given the urls already in the correct order, downloads
@@ -36,13 +51,38 @@ def download_images(img_urls, dest_dir):
   Creates the directory if necessary.
   """
   # +++your code here+++
+
+  img_tags = []
+  if not os.path.exists(os.path.dirname(dest_dir)):
+    try:
+      os.makedirs(os.path.dirname(dest_dir))
+    except OSError as exc:  # Guard against race condition
+      if exc.errno != errno.EEXIST:
+        raise
+  for i in range(len(img_urls)):
+    filename = dest_dir + '/img%s' % i
+    img_tags.append('<img src="%s">' % filename)
+    print('Fetching image slice from [%s] to file "%s" ' % (img_urls[i], filename))
+    name, response = urllib.request.urlretrieve(img_urls[i], filename)
+
+  index_data = []
+  index_data.append('<verbatim>\n<html>\n<body>')
+  index_data.append(''.join(img_tags))
+  index_data.append('\n</body>\n</html>')
+  filename = dest_dir + '/index.html'
+  print('Writing img data into %s' % filename)
+  with open(filename, 'w') as f:
+    for line in index_data:
+      f.write(line)
+
+  # print(name)
   
 
 def main():
   args = sys.argv[1:]
 
   if not args:
-    print 'usage: [--todir dir] logfile '
+    print('usage: [--todir dir] logfile ')
     sys.exit(1)
 
   todir = ''
@@ -55,7 +95,8 @@ def main():
   if todir:
     download_images(img_urls, todir)
   else:
-    print '\n'.join(img_urls)
+    print('no to dir')
+    #  print('\n'.join(img_urls))
 
 if __name__ == '__main__':
   main()
