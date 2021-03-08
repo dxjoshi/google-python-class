@@ -42,6 +42,12 @@ def read_urls(filename):
   #   print('http://%s%s' % (server, url[0]))
 
 
+def func(item):
+  # print(item)
+  # print(re.match(r'[\S.]+-([\S.]+)', item).group(1))
+  return re.match(r'[\S.]+-([\S.]+)', item).group(1)
+
+
 def download_images(img_urls, dest_dir):
   """Given the urls already in the correct order, downloads
   each image into the given directory.
@@ -59,11 +65,13 @@ def download_images(img_urls, dest_dir):
     except OSError as exc:  # Guard against race condition
       if exc.errno != errno.EEXIST:
         raise
+  img_urls = sorted(img_urls, key=func)
   for i in range(len(img_urls)):
-    filename = dest_dir + '/img%s' % i
-    img_tags.append('<img src="%s">' % filename)
-    print('Fetching image slice from [%s] to file "%s" ' % (img_urls[i], filename))
-    name, response = urllib.request.urlretrieve(img_urls[i], filename)
+     print(img_urls[i])
+     filename = dest_dir + '/img%s' % i
+     img_tags.append('<img src="%s">' % filename)
+     print('Fetching image slice from [%s] to file "%s" ' % (img_urls[i], filename))
+     urllib.request.urlretrieve(img_urls[i], filename)
 
   index_data = []
   index_data.append('<verbatim>\n<html>\n<body>')
